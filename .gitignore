@@ -1,4 +1,6 @@
 ADS_ids.txt
+passwords.txt
+settings.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
