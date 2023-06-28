@@ -13,7 +13,7 @@ from selenium.webdriver.common.by import By
 from termcolor import cprint
 import colorama
 
-api_key = "69425251c4acad99d5539cdec6bfecf1"
+#api_key = "69425251c4acad99d5539cdec6bfecf1" НЕДЕЙСТВИТЕЛЕН
 directory = 'C:\.ADSPOWER_GLOBAL\cache'
 #chrome_path = "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
 ADS_ids_txt = "ADS_ids.txt"
@@ -78,25 +78,27 @@ def main():
             json.dump(settings, f)
 
     group_num = math.ceil(len(ids) / int(settings["pr_count"]))
-
+    cprint("!!!Для перехода в настройки введите 0.", "yellow")
     gr_open = input("Номер открываемой группы? (Всего {}): ".format(group_num))
     gr_open = int(gr_open)-1
 
     # Загрузка паролей
+    # TODO: Добавить обработку наличия 1 пароля для всех MM
+    # TODO: Добавить обработку пустых строк
     with open("passwords.txt", "r") as file:
         passwrds = file.readlines()
         passwrds = [line.strip() for line in passwrds]
 
     # Получение номеров в заданной группе
     id_nums = get_id_numbers(gr_open, int(settings["pr_count"]), len(ids))
-
     # Работа с профилями
     print("Открываются профили: ")
     prof_nums = list(id_nums)
     for i in range(len(prof_nums)):
         prof_nums[i] += 1
-    print(prof_nums)
-    print(id_nums)
+    cprint(prof_nums, "green")
+    del prof_nums
+
     for id in id_nums:
         ads_id = ids[id]
         # TODO: Разобраться с launch_args и найти способ открывать url при запуске
@@ -124,6 +126,7 @@ def main():
         # Ввод пароля от MM
         time.sleep(2)
         input_element = driver.find_element(By.ID, "password")
+
         input_element.send_keys(passwrds[id])
         input_element.send_keys(Keys.ENTER)
 

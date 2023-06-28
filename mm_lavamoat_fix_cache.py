@@ -20,6 +20,7 @@ def get_profile_cache_path(ads_id, path_from_ads_settings):
         return 0
     return path
 
+
 def line_control(file_txt):
     # Удаление пустых строк
     with open(file_txt) as f1:
