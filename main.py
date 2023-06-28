@@ -19,6 +19,13 @@ directory = 'C:\.ADSPOWER_GLOBAL\cache'
 ADS_ids_txt = "ADS_ids.txt"
 start_url = "https://lumpics.ru/where-are-the-extensions-in-google-chrome/#i-2"
 
+def line_control(file_txt):
+    # Удаление пустых строк
+    with open(file_txt) as f1:
+        lines = f1.readlines()
+        non_empty_lines = (line for line in lines if not line.isspace())
+        with open(file_txt, "w") as n_f1:
+            n_f1.writelines(non_empty_lines)
 def ads_id_from_cache():
     # Получение списка профилей из кэша
     # TODO: Изменить способ получения на обращение к api ads
@@ -58,6 +65,9 @@ def main():
     ads_id_from_cache()
     set_def_settings()
 
+    line_control(ADS_ids_txt)
+    line_control("passwords.txt")
+
     # Загрузка id_ads
     with open(ADS_ids_txt, "r") as file:
         # Чтение содержимого файла и запись в список
@@ -83,7 +93,6 @@ def main():
     gr_open = int(gr_open)-1
 
     # Загрузка паролей
-    # TODO: Добавить обработку пустых строк
     with open("passwords.txt", "r") as file:
         passwrds = file.readlines()
         passwrds = [line.strip() for line in passwrds]
