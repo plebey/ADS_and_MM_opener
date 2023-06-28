@@ -6,15 +6,20 @@ from selenium.webdriver.chrome.service import Service
 import sys
 import json
 import os
+import math
+
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
 
 api_key = "69425251c4acad99d5539cdec6bfecf1"
 directory = 'C:\.ADSPOWER_GLOBAL\cache'
 #chrome_path = "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
 ADS_ids_txt = "ADS_ids.txt"
-
+start_url = "https://lumpics.ru/where-are-the-extensions-in-google-chrome/#i-2"
 
 def ads_id_from_cache():
     # Получение списка профилей из кэша
+    # TODO: Изменить способ получения на обращение к api ads
     if not os.path.exists(ADS_ids_txt):
         # Получение списка папок в директории
         folders = [f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f))]
@@ -39,23 +44,69 @@ def set_def_settings():
         with open("settings.json", "w") as file:
             file.write(json_data)
 
+def get_id_numbers(group_index, group_size, total_words):
+    start_index = group_index * group_size
+    end_index = min(start_index + group_size, total_words)
+    return list(range(start_index, end_index))
 
 def main():
 
     ads_id_from_cache()
     set_def_settings()
 
-    # Открытие файла для чтения
+    # Загрузка id_ads
     with open(ADS_ids_txt, "r") as file:
         # Чтение содержимого файла и запись в список
         ids = file.readlines()
-
         # Удаление символа новой строки "\n" из каждой строки
         ids = [line.strip() for line in ids]
 
-    # Вывод списка
-    print(ids)
+    # Загрузка параметров
+    with open("settings.json", "r") as file:
+        settings = json.load(file)
+    group_num = math.ceil(len(ids) / int(settings["pr_count"]))
+    print(group_num)
+    gr_open = input("Номер открываемой группы? (Всего {}): ".format(group_num))
+    gr_open = int(gr_open)-1
 
+    # Загрузка паролей
+    with open("passwords.txt", "r") as file:
+        passwrds = file.readlines()
+        passwrds = [line.strip() for line in passwrds]
+
+    # Получение номеров в заданной группе
+    id_nums = get_id_numbers(gr_open, int(settings["pr_count"]), len(ids))
+
+    # Работа с профилями
+    print("Открываются профили: ")
+    print(id_nums)
+    for id in id_nums:
+        ads_id = ids[id]
+        open_url = "http://localhost:50325/api/v1/browser/start?user_id=" + ads_id
+        resp = requests.get(open_url).json()
+        if resp["code"] != 0:
+            print(resp["msg"])
+            print("please check ads_id")
+            sys.exit()
+        chrome_driver = resp["data"]["webdriver"]
+        service = Service(chrome_driver)
+        chrome_options = Options()
+        chrome_options.add_experimental_option("debuggerAddress", resp["data"]["ws"]["selenium"])
+        chrome_options.add_argument("--url={}".format(start_url))
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        driver.get("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html")
+        window_handles = driver.window_handles
+        driver.switch_to.window(window_handles[1])
+        # driver.close()
+        # window_handles = driver.window_handles
+        # driver.switch_to.window(window_handles[0])
+        # Ввод пароля от MM
+        time.sleep(1.5)
+        input_element = driver.find_element(By.ID, "password")
+        input_element.send_keys(passwrds[id])
+        input_element.send_keys(Keys.ENTER)
+
+        driver.quit()
 
     # ads_folder = "j5v7h6t_gl40mk"
     # ads_id = "j5v7h6t"
