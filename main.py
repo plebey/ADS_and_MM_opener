@@ -53,6 +53,7 @@ def get_id_numbers(group_index, group_size, total_words):
     return list(range(start_index, end_index))
 
 def main():
+    # TODO: Добавить возможность изменения настроек
     colorama.init()
     ads_id_from_cache()
     set_def_settings()
@@ -91,7 +92,10 @@ def main():
 
     # Работа с профилями
     print("Открываются профили: ")
-    # TODO: Изменить отображение id на id+1
+    prof_nums = list(id_nums)
+    for i in range(len(prof_nums)):
+        prof_nums[i] += 1
+    print(prof_nums)
     print(id_nums)
     for id in id_nums:
         ads_id = ids[id]
