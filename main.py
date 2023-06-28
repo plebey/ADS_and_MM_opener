@@ -7,9 +7,11 @@ import sys
 import json
 import os
 import math
-
+import mm_lavamoat_fix_cache
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
+from termcolor import cprint
+import colorama
 
 api_key = "69425251c4acad99d5539cdec6bfecf1"
 directory = 'C:\.ADSPOWER_GLOBAL\cache'
@@ -38,7 +40,8 @@ def set_def_settings():
     if not os.path.exists("settings.json"):
         profiles_count = input("Сколько профилей открывать одновременно? (Пример ответа: 3)")
         data = {
-            "pr_count": profiles_count
+            "pr_count": profiles_count,
+            "lavamoat_fixed": False,
         }
         json_data = json.dumps(data, indent=4)
         with open("settings.json", "w") as file:
@@ -50,7 +53,7 @@ def get_id_numbers(group_index, group_size, total_words):
     return list(range(start_index, end_index))
 
 def main():
-
+    colorama.init()
     ads_id_from_cache()
     set_def_settings()
 
@@ -64,8 +67,17 @@ def main():
     # Загрузка параметров
     with open("settings.json", "r") as file:
         settings = json.load(file)
+
+    # Проверка lavamoat_fix
+    if not settings["lavamoat_fixed"]:
+
+        mm_lavamoat_fix_cache.lavamoat_editor()
+        settings["lavamoat_fixed"]=True
+        with open('settings.json', 'w') as f:
+            json.dump(settings, f)
+
     group_num = math.ceil(len(ids) / int(settings["pr_count"]))
-    print(group_num)
+
     gr_open = input("Номер открываемой группы? (Всего {}): ".format(group_num))
     gr_open = int(gr_open)-1
 
@@ -79,35 +91,40 @@ def main():
 
     # Работа с профилями
     print("Открываются профили: ")
+    # TODO: Изменить отображение id на id+1
     print(id_nums)
     for id in id_nums:
         ads_id = ids[id]
-        open_url = "http://localhost:50325/api/v1/browser/start?user_id=" + ads_id
+        # TODO: Разобраться с launch_args и найти способ открывать url при запуске
+        open_url = "http://localhost:50325/api/v1/browser/start?user_id=" + ads_id+"&open_tabs=1"
+        # print(open_url)
         resp = requests.get(open_url).json()
         if resp["code"] != 0:
             print(resp["msg"])
-            print("please check ads_id")
+            cprint("please check ads_id", "red")
             sys.exit()
         chrome_driver = resp["data"]["webdriver"]
         service = Service(chrome_driver)
+
         chrome_options = Options()
         chrome_options.add_experimental_option("debuggerAddress", resp["data"]["ws"]["selenium"])
-        chrome_options.add_argument("--url={}".format(start_url))
-        driver = webdriver.Chrome(service=service, options=chrome_options)
+        chrome_options.add_argument("--url=https://www.example.com")
+        # print(service.command_line_args())
+        driver = webdriver.Chrome(service=service, options=chrome_options, service_args=["--url=https://www.example.com"])
         driver.get("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html")
-        window_handles = driver.window_handles
-        driver.switch_to.window(window_handles[1])
+        # window_handles = driver.window_handles
+        # driver.switch_to.window(window_handles[1])
         # driver.close()
         # window_handles = driver.window_handles
         # driver.switch_to.window(window_handles[0])
         # Ввод пароля от MM
-        time.sleep(1.5)
+        time.sleep(2)
         input_element = driver.find_element(By.ID, "password")
         input_element.send_keys(passwrds[id])
         input_element.send_keys(Keys.ENTER)
 
         driver.quit()
-
+        colorama.deinit()
     # ads_folder = "j5v7h6t_gl40mk"
     # ads_id = "j5v7h6t"
     #
