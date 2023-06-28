@@ -61,6 +61,7 @@ def get_id_numbers(group_index, group_size, total_words):
 
 def main():
     # TODO: Добавить возможность изменения настроек
+    # TODO: Добавить мультипоток
     colorama.init()
     ads_id_from_cache()
     set_def_settings()
@@ -104,13 +105,18 @@ def main():
     prof_nums = list(id_nums)
     for i in range(len(prof_nums)):
         prof_nums[i] += 1
-    cprint(prof_nums, "green")
+    cprint(str(prof_nums), "green")
     del prof_nums
+
+    args1 = ["--disable-popup-blocking", "--disable-web-security"]
+    args1 = str(args1).replace("'", '"')
 
     for id in id_nums:
         ads_id = ids[id]
-        # TODO: Разобраться с launch_args и найти способ открывать url при запуске
-        open_url = "http://localhost:50325/api/v1/browser/start?user_id=" + ads_id+"&open_tabs=1"
+        # TODO: Разобраться с launch_args и найти способ открывать url при запуске;
+        # TODO: Вынести start_url в settings.json
+
+        open_url = "http://localhost:50325/api/v1/browser/start?user_id=" + ads_id+"&open_tabs=1" + f"&launch_args={str(args1)}"
         # print(open_url)
         resp = requests.get(open_url).json()
         if resp["code"] != 0:
@@ -121,13 +127,29 @@ def main():
         service = Service(chrome_driver)
 
         chrome_options = Options()
+        chrome_options.add_argument("start-maximized")
+        chrome_options.add_argument("--disable-web-security")
+        chrome_options.add_argument("--disable-site-isolation-trials")
+        chrome_options.add_argument("--disable-popup-blocking")
+        #chrome_options.add_experimental_option("excludeSwitches", ["disable-popup-blocking"])
         chrome_options.add_experimental_option("debuggerAddress", resp["data"]["ws"]["selenium"])
-        chrome_options.add_argument("--url=https://www.example.com")
         # print(service.command_line_args())
-        driver = webdriver.Chrome(service=service, options=chrome_options, service_args=["--url=https://www.example.com"])
-        driver.get("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html")
-        # window_handles = driver.window_handles
-        # driver.switch_to.window(window_handles[1])
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        driver.get("https://www.google.com/?hl=ru")
+        #time.sleep(5)
+        #driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.F5)
+        #driver.switch_to.window(driver.window_handles[-1])
+        #input_element = driver.find_element(By.CSS_SELECTOR, 'input[name="q"]')
+        # Ввод текста в строку поиска браузера
+        #input_element.send_keys('chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html')
+        # Нажатие клавиши Enter для выполнения поиска
+        #input_element.send_keys(Keys.ENTER)
+
+
+        driver.execute_script('window.open("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html");')
+        window_handles = driver.window_handles
+        driver.switch_to.window(window_handles[1])
+        driver.refresh()
         # driver.close()
         # window_handles = driver.window_handles
         # driver.switch_to.window(window_handles[0])
