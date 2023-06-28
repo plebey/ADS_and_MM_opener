@@ -83,7 +83,6 @@ def main():
     gr_open = int(gr_open)-1
 
     # Загрузка паролей
-    # TODO: Добавить обработку наличия 1 пароля для всех MM
     # TODO: Добавить обработку пустых строк
     with open("passwords.txt", "r") as file:
         passwrds = file.readlines()
@@ -126,8 +125,10 @@ def main():
         # Ввод пароля от MM
         time.sleep(2)
         input_element = driver.find_element(By.ID, "password")
-
-        input_element.send_keys(passwrds[id])
+        if len(passwrds) == 1:
+            input_element.send_keys(passwrds[0])
+        else:
+            input_element.send_keys(passwrds[id])
         input_element.send_keys(Keys.ENTER)
 
         driver.quit()
