@@ -1,3 +1,5 @@
+from threading import Thread
+
 import requests
 import time
 from selenium import webdriver
@@ -19,6 +21,7 @@ directory = 'C:\.ADSPOWER_GLOBAL\cache'
 ADS_ids_txt = "ADS_ids.txt"
 start_url = "https://lumpics.ru/where-are-the-extensions-in-google-chrome/#i-2"
 
+
 def line_control(file_txt):
     # Удаление пустых строк
     with open(file_txt) as f1:
@@ -26,6 +29,8 @@ def line_control(file_txt):
         non_empty_lines = (line for line in lines if not line.isspace())
         with open(file_txt, "w") as n_f1:
             n_f1.writelines(non_empty_lines)
+
+
 def ads_id_from_cache():
     # Получение списка профилей из кэша
     # TODO: Изменить способ получения на обращение к api ads
@@ -54,10 +59,65 @@ def set_def_settings():
         with open("settings.json", "w") as file:
             file.write(json_data)
 
+
 def get_id_numbers(group_index, group_size, total_words):
     start_index = group_index * group_size
     end_index = min(start_index + group_size, total_words)
     return list(range(start_index, end_index))
+
+
+def selenium_task(window_id, open_url, http_link, passwrds):
+    # TODO: Разобраться с launch_args и найти способ открывать url при запуске;
+    # TODO: Вынести start_url в settings.json
+
+    print(open_url)
+    resp = requests.get(open_url).json()
+    if resp["code"] != 0:
+        print(resp["msg"])
+        cprint("please check ads_id", "red")
+        sys.exit()
+    chrome_driver = resp["data"]["webdriver"]
+    service = Service(chrome_driver)
+
+    chrome_options = Options()
+    chrome_options.add_argument("start-maximized")
+    chrome_options.add_argument("--disable-web-security")
+    chrome_options.add_argument("--disable-site-isolation-trials")
+    chrome_options.add_argument("--disable-popup-blocking")
+    # chrome_options.add_experimental_option("excludeSwitches", ["disable-popup-blocking"])
+    chrome_options.add_experimental_option("debuggerAddress", resp["data"]["ws"]["selenium"])
+    # print(service.command_line_args())
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+
+    driver.get(http_link)
+    # time.sleep(5)
+    # driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.F5)
+    # driver.switch_to.window(driver.window_handles[-1])
+    # input_element = driver.find_element(By.CSS_SELECTOR, 'input[name="q"]')
+    # Ввод текста в строку поиска браузера
+    # input_element.send_keys('chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html')
+    # Нажатие клавиши Enter для выполнения поиска
+    # input_element.send_keys(Keys.ENTER)
+
+    driver.execute_script('window.open("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html");')
+    window_handles = driver.window_handles
+    driver.switch_to.window(window_handles[1])
+    driver.refresh()
+    # driver.close()
+    # window_handles = driver.window_handles
+    # driver.switch_to.window(window_handles[0])
+    # Ввод пароля от MM
+    time.sleep(2)
+    input_element = driver.find_element(By.ID, "password")
+    if len(passwrds) == 1:
+        input_element.send_keys(passwrds[0])
+    else:
+        input_element.send_keys(passwrds[window_id])
+    input_element.send_keys(Keys.ENTER)
+
+    driver.quit()
+    colorama.deinit()
+
 
 def main():
     # TODO: Добавить возможность изменения настроек
@@ -92,7 +152,7 @@ def main():
     cprint("!!!Для перехода в настройки введите 0.", "yellow")
     gr_open = input("Номер открываемой группы? (Всего {}): ".format(group_num))
     gr_open = int(gr_open)-1
-
+    http_link = input("Стартовая ссылка: ")
     # Загрузка паролей
     with open("passwords.txt", "r") as file:
         passwrds = file.readlines()
@@ -107,63 +167,26 @@ def main():
         prof_nums[i] += 1
     cprint(str(prof_nums), "green")
     del prof_nums
-
+    # start_url1 = "https://lumpics.ru"
+    # args1 = ["--disable-popup-blocking", "--disable-web-security", start_url1]
     args1 = ["--disable-popup-blocking", "--disable-web-security"]
     args1 = str(args1).replace("'", '"')
-
-    for id in id_nums:
-        ads_id = ids[id]
-        # TODO: Разобраться с launch_args и найти способ открывать url при запуске;
-        # TODO: Вынести start_url в settings.json
-
-        open_url = "http://localhost:50325/api/v1/browser/start?user_id=" + ads_id+"&open_tabs=1" + f"&launch_args={str(args1)}"
-        # print(open_url)
-        resp = requests.get(open_url).json()
-        if resp["code"] != 0:
-            print(resp["msg"])
-            cprint("please check ads_id", "red")
-            sys.exit()
-        chrome_driver = resp["data"]["webdriver"]
-        service = Service(chrome_driver)
-
-        chrome_options = Options()
-        chrome_options.add_argument("start-maximized")
-        chrome_options.add_argument("--disable-web-security")
-        chrome_options.add_argument("--disable-site-isolation-trials")
-        chrome_options.add_argument("--disable-popup-blocking")
-        #chrome_options.add_experimental_option("excludeSwitches", ["disable-popup-blocking"])
-        chrome_options.add_experimental_option("debuggerAddress", resp["data"]["ws"]["selenium"])
-        # print(service.command_line_args())
-        driver = webdriver.Chrome(service=service, options=chrome_options)
-        driver.get("https://www.google.com/?hl=ru")
-        #time.sleep(5)
-        #driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.F5)
-        #driver.switch_to.window(driver.window_handles[-1])
-        #input_element = driver.find_element(By.CSS_SELECTOR, 'input[name="q"]')
-        # Ввод текста в строку поиска браузера
-        #input_element.send_keys('chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html')
-        # Нажатие клавиши Enter для выполнения поиска
-        #input_element.send_keys(Keys.ENTER)
-
-
-        driver.execute_script('window.open("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html");')
-        window_handles = driver.window_handles
-        driver.switch_to.window(window_handles[1])
-        driver.refresh()
-        # driver.close()
-        # window_handles = driver.window_handles
-        # driver.switch_to.window(window_handles[0])
-        # Ввод пароля от MM
+    # for item in args1:
+    #     print(type(item))
+    threads = []
+    for window_id in id_nums:
+        ads_id = ids[window_id]
+        open_url = "http://localhost:50325/api/v1/browser/start?user_id=" + ads_id + "&open_tabs=1" + f"&launch_args={str(args1)}"
+        thread = Thread(target=selenium_task, args=(window_id, open_url, http_link, passwrds))
         time.sleep(2)
-        input_element = driver.find_element(By.ID, "password")
-        if len(passwrds) == 1:
-            input_element.send_keys(passwrds[0])
-        else:
-            input_element.send_keys(passwrds[id])
-        input_element.send_keys(Keys.ENTER)
+        thread.start()
+        threads.append(thread)
 
-        driver.quit()
-        colorama.deinit()
+    # Ожидаем завершения всех потоков
+    for thread in threads:
+        thread.join()
+
+
     # ads_folder = "j5v7h6t_gl40mk"
     # ads_id = "j5v7h6t"
     #
