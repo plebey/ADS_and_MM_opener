@@ -67,10 +67,9 @@ def get_id_numbers(group_index, group_size, total_words):
 
 
 def selenium_task(window_id, open_url, http_link, passwrds):
-    # TODO: Разобраться с launch_args и найти способ открывать url при запуске;
-    # TODO: Вынести start_url в settings.json
-
-    print(open_url)
+    # TODO: Вынести start_url в settings.json??
+    # TODO: Сделать вводимый сайт по умолчанию??
+    #print(open_url)
     resp = requests.get(open_url).json()
     if resp["code"] != 0:
         print(resp["msg"])
@@ -101,7 +100,7 @@ def selenium_task(window_id, open_url, http_link, passwrds):
 
     driver.execute_script('window.open("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html");')
     window_handles = driver.window_handles
-    driver.switch_to.window(window_handles[1])
+    driver.switch_to.window(window_handles[-1])
     driver.refresh()
     # driver.close()
     # window_handles = driver.window_handles
@@ -121,7 +120,8 @@ def selenium_task(window_id, open_url, http_link, passwrds):
 
 def main():
     # TODO: Добавить возможность изменения настроек
-    # TODO: Добавить мультипоток
+    # TODO: Изменить способ открытия по группам
+    # TODO: Сделать опциональным закрытие всех прошлых вкладок
     colorama.init()
     ads_id_from_cache()
     set_def_settings()
