@@ -1,3 +1,4 @@
+from pathlib import Path
 from threading import Thread
 
 import requests
@@ -127,7 +128,13 @@ def main():
     set_def_settings()
 
     line_control(ADS_ids_txt)
-    line_control("passwords.txt")
+    if os.path.exists("passwords.txt"):
+        line_control("passwords.txt")
+    else:
+        # Создаем файл, если он не существует
+        Path("passwords.txt").touch()
+        print("Файл passwords.txt создан. Внесите пароли и перезапустите скрипт.")
+        sys.exit(0)
 
     # Загрузка id_ads
     with open(ADS_ids_txt, "r") as file:
