@@ -219,9 +219,10 @@ def main():
     prof_open = input("Номера открываемых профилей (ex: '1, 2, 4-7, 10'): ")
 
     # Переход в настройки
-    if int(prof_open) == 0:
-        settings_management(settings)
-        sys.exit(0)
+    if len(prof_open) == 1:
+        if int(prof_open) == 0:
+            settings_management(settings)
+            sys.exit(0)
 
     # Обработка введенных номеров профилей
     prof_open = prof_open.replace(" ", "")
