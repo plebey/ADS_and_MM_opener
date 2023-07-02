@@ -83,7 +83,8 @@ def set_def_settings():
         data = {
             "pr_count": profiles_count,
             "lavamoat_fixed": False,
-            "group_id": gr_id
+            "group_id": gr_id,
+            "close_windows": True
         }
         json_data = json.dumps(data, indent=4)
         with open("settings.json", "w") as file:
@@ -116,6 +117,9 @@ def selenium_task(window_id, open_url, http_link, passwrds):
     # print(service.command_line_args())
     driver = webdriver.Chrome(service=service, options=chrome_options)
 
+    window_handles = driver.window_handles
+    driver.switch_to.window(window_handles[0])
+
     driver.get(http_link)
     # time.sleep(5)
     # driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.F5)
@@ -146,7 +150,6 @@ def selenium_task(window_id, open_url, http_link, passwrds):
 
 def main():
     # TODO: Добавить возможность изменения настроек
-    # TODO: Сделать опциональным закрытие всех прошлых вкладок
     colorama.init()
     # ads_id_from_cache()
     set_def_settings()
@@ -217,6 +220,13 @@ def main():
 
     # Получение номеров в заданной группе
     # id_nums = get_id_numbers(gr_open, int(settings["pr_count"]), len(ids))
+
+    # Проверка на закрытие вкладок
+    if settings["close_windows"]:
+        window_setting = "&open_tabs=1"
+    else:
+        window_setting = ''
+
     # Работа с профилями
     print("Открываются профили: ")
     prof_nums = list(open_ids)
@@ -233,7 +243,7 @@ def main():
     threads = []
     for window_id in open_ids:
         ads_id = ids[window_id]
-        open_url = "http://localhost:50325/api/v1/browser/start?user_id=" + ads_id + "&open_tabs=1" + f"&launch_args={str(args1)}"
+        open_url = "http://localhost:50325/api/v1/browser/start?user_id=" + ads_id + window_setting + f"&launch_args={str(args1)}"
         thread = Thread(target=selenium_task, args=(window_id, open_url, http_link, passwrds))
         time.sleep(2)
         thread.start()
