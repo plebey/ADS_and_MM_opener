@@ -15,8 +15,9 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from termcolor import cprint
 import colorama
+import ads_ids_from_groups as ads_info
 
-#api_key = "69425251c4acad99d5539cdec6bfecf1" НЕДЕЙСТВИТЕЛЕН
+
 directory = 'C:\.ADSPOWER_GLOBAL\cache'
 #chrome_path = "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
 ADS_ids_txt = "ADS_ids.txt"
@@ -32,29 +33,57 @@ def line_control(file_txt):
             n_f1.writelines(non_empty_lines)
 
 
-def ads_id_from_cache():
-    # Получение списка профилей из кэша
-    # TODO: Изменить способ получения на обращение к api ads
+# Legacy способ получения id из кэша ADS
+# def ads_id_from_cache():
+#     # Получение списка профилей из кэша
+#     if not os.path.exists(ADS_ids_txt):
+#         # Получение списка папок в директории
+#         folders = [f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f))]
+#         # Запись названий папок в файл
+#         with open(ADS_ids_txt, 'w') as file:
+#             for folder in folders:
+#                 parts = folder.split('_')
+#                 folder = parts[0]
+#                 file.write(folder + '\n')
+#         print('ID профилей сохранены в файл: ', ADS_ids_txt)
+#         print('При необходимости, измените их порядок в указанном файле.')
+
+def ads_ids_from_group(settings):
+    with open("settings.json", "r") as file:
+        settings = json.load(file)
+    ads_ids = ads_info.ads_id_from_api(settings["group_id"])
+
     if not os.path.exists(ADS_ids_txt):
-        # Получение списка папок в директории
-        folders = [f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f))]
-        # Запись названий папок в файл
         with open(ADS_ids_txt, 'w') as file:
-            for folder in folders:
-                parts = folder.split('_')
-                folder = parts[0]
-                file.write(folder + '\n')
+            for ads_id in ads_ids:
+                file.write(ads_id + '\n')
         print('ID профилей сохранены в файл: ', ADS_ids_txt)
         print('При необходимости, измените их порядок в указанном файле.')
+
+
+def groups_choose():
+    # Обрабатываем запрос на группы
+    group_info = ads_info.ads_groups_from_api()
+    gr_names = ''
+    gr_num = 1
+    for key, value in group_info.items():
+        gr_names += str(gr_num) + f". {value}\n"
+        gr_num += 1
+    gr_list = list(group_info.items())
+    gr_id = int(input("Выберите номер группы из списка: \n" + gr_names)) - 1
+    sel_gr = gr_list[gr_id][0]
+    return sel_gr
 
 
 def set_def_settings():
     # Задание первичных настроек
     if not os.path.exists("settings.json"):
         profiles_count = input("Сколько профилей открывать одновременно? (Пример ответа: 3)")
+        gr_id = groups_choose()
         data = {
             "pr_count": profiles_count,
             "lavamoat_fixed": False,
+            "group_id": gr_id
         }
         json_data = json.dumps(data, indent=4)
         with open("settings.json", "w") as file:
@@ -70,7 +99,7 @@ def get_id_numbers(group_index, group_size, total_words):
 def selenium_task(window_id, open_url, http_link, passwrds):
     # TODO: Вынести start_url в settings.json??
     # TODO: Сделать вводимый сайт по умолчанию??
-    #print(open_url)
+
     resp = requests.get(open_url).json()
     if resp["code"] != 0:
         print(resp["msg"])
@@ -119,13 +148,22 @@ def selenium_task(window_id, open_url, http_link, passwrds):
     colorama.deinit()
 
 
+
+
 def main():
     # TODO: Добавить возможность изменения настроек
     # TODO: Изменить способ открытия по группам
     # TODO: Сделать опциональным закрытие всех прошлых вкладок
     colorama.init()
-    ads_id_from_cache()
+    # ads_id_from_cache()
     set_def_settings()
+
+    # Загрузка параметров
+    with open("settings.json", "r") as file:
+        settings = json.load(file)
+
+    # Загрузка профилей ads
+    ads_ids_from_group(settings)
 
     line_control(ADS_ids_txt)
     if os.path.exists("passwords.txt"):
@@ -142,10 +180,6 @@ def main():
         ids = file.readlines()
         # Удаление символа новой строки "\n" из каждой строки
         ids = [line.strip() for line in ids]
-
-    # Загрузка параметров
-    with open("settings.json", "r") as file:
-        settings = json.load(file)
 
     # Проверка lavamoat_fix
     if not settings["lavamoat_fixed"]:
@@ -192,30 +226,6 @@ def main():
     # Ожидаем завершения всех потоков
     for thread in threads:
         thread.join()
-
-
-    # ads_folder = "j5v7h6t_gl40mk"
-    # ads_id = "j5v7h6t"
-    #
-    # open_url = "http://localhost:50325/api/v1/browser/start?user_id=" + ads_id
-    # close_url = "http://localhost:50325/api/v1/browser/stop?user_id=" + ads_id
-    #
-    # resp = requests.get(open_url).json()
-    # if resp["code"] != 0:
-    #     print(resp["msg"])
-    #     print("please check ads_id")
-    #     sys.exit()
-    #
-    # chrome_driver = resp["data"]["webdriver"]
-    # service = Service(chrome_driver)
-    # chrome_options = Options()
-    # chrome_options.add_experimental_option("debuggerAddress", resp["data"]["ws"]["selenium"])
-    # driver = webdriver.Chrome(service=service, options=chrome_options)
-    # print(driver.title)
-    # driver.get("https://github.com/AdsPower/localAPI/blob/main/py-examples/example-start-profile.py")
-    #time.sleep(5)
-    #driver.quit()
-    #requests.get(close_url)
 
 
 if __name__ == '__main__':
