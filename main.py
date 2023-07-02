@@ -90,10 +90,10 @@ def set_def_settings():
             file.write(json_data)
 
 
-def get_id_numbers(group_index, group_size, total_words):
-    start_index = group_index * group_size
-    end_index = min(start_index + group_size, total_words)
-    return list(range(start_index, end_index))
+# def get_id_numbers(group_index, group_size, total_words):
+#     start_index = group_index * group_size
+#     end_index = min(start_index + group_size, total_words)
+#     return list(range(start_index, end_index))
 
 
 def selenium_task(window_id, open_url, http_link, passwrds):
@@ -144,8 +144,6 @@ def selenium_task(window_id, open_url, http_link, passwrds):
     colorama.deinit()
 
 
-
-
 def main():
     # TODO: Добавить возможность изменения настроек
     # TODO: Сделать опциональным закрытие всех прошлых вкладок
@@ -184,11 +182,25 @@ def main():
         with open('settings.json', 'w') as f:
             json.dump(settings, f)
 
-    group_num = math.ceil(len(ids) / int(settings["pr_count"]))
     cprint("!!!Для перехода в настройки введите 0.", "yellow")
-    # TODO: Изменить способ открытия профилей с групп на перечисление
-    gr_open = input("Номер открываемой группы? (Всего {}): ".format(group_num))
-    gr_open = int(gr_open)-1
+
+    prof_open = input("Номера открываемых профилей (ex: '1, 2, 4-7, 10'): ")
+    prof_open = prof_open.replace(" ", "")
+    prof_list = prof_open.split(',')
+    open_ids = []
+    for elem in prof_list:
+        if '-' in elem:
+            temp = elem.split('-')
+            for pr_id in list(range(int(temp[0]), int(temp[1]))):
+                open_ids.append(pr_id)
+            open_ids.append((int(temp[1])))
+        else:
+            open_ids.append(int(elem))
+    open_ids = [x - 1 for x in open_ids]
+
+    # group_num = math.ceil(len(ids) / int(settings["pr_count"]))
+    # gr_open = input("Номер открываемой группы? (Всего {}): ".format(group_num))
+    # gr_open = int(gr_open)-1
 
     if 'http_link' in settings:
         http_link = settings["http_link"]
@@ -198,17 +210,16 @@ def main():
         with open('settings.json', 'w') as file:
             json.dump(settings, file, indent=4)
 
-
     # Загрузка паролей
     with open("passwords.txt", "r") as file:
         passwrds = file.readlines()
         passwrds = [line.strip() for line in passwrds]
 
     # Получение номеров в заданной группе
-    id_nums = get_id_numbers(gr_open, int(settings["pr_count"]), len(ids))
+    # id_nums = get_id_numbers(gr_open, int(settings["pr_count"]), len(ids))
     # Работа с профилями
     print("Открываются профили: ")
-    prof_nums = list(id_nums)
+    prof_nums = list(open_ids)
     for i in range(len(prof_nums)):
         prof_nums[i] += 1
     cprint(str(prof_nums), "green")
@@ -220,7 +231,7 @@ def main():
     # for item in args1:
     #     print(type(item))
     threads = []
-    for window_id in id_nums:
+    for window_id in open_ids:
         ads_id = ids[window_id]
         open_url = "http://localhost:50325/api/v1/browser/start?user_id=" + ads_id + "&open_tabs=1" + f"&launch_args={str(args1)}"
         thread = Thread(target=selenium_task, args=(window_id, open_url, http_link, passwrds))
