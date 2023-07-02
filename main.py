@@ -148,8 +148,37 @@ def selenium_task(window_id, open_url, http_link, passwrds):
     colorama.deinit()
 
 
+def settings_management(settings):
+    print ("Выберите номер изменяемого свойства (0 для выхода из настроек): ")
+    i = 1
+    for key, value in settings.items():
+        # print(settings.items())
+        print(str(i)+'. '+str(key)+': '+ str(value))
+        i += 1
+    set_id = input()
+    set_id = int(set_id)
+    chosed_seting = ''
+    if set_id == 0:
+        main()
+    elif set_id == 1:
+        chosed_seting = 'pr_count'
+    elif set_id == 2:
+        chosed_seting = 'lavamoat_fixed'
+    elif set_id == 3:
+        chosed_seting = 'group_id'
+    elif set_id == 4:
+        chosed_seting = 'close_windows'
+    elif set_id == 5:
+        chosed_seting = 'http_link'
+
+    settings[chosed_seting] = input(f"Введите новое значение для {chosed_seting}: ")
+    json_data = json.dumps(settings, indent=4)
+    with open("settings.json", "w") as file:
+        file.write(json_data)
+    main()
+
+
 def main():
-    # TODO: Добавить возможность изменения настроек
     colorama.init()
     # ads_id_from_cache()
     set_def_settings()
@@ -188,6 +217,13 @@ def main():
     cprint("!!!Для перехода в настройки введите 0.", "yellow")
 
     prof_open = input("Номера открываемых профилей (ex: '1, 2, 4-7, 10'): ")
+
+    # Переход в настройки
+    if int(prof_open) == 0:
+        settings_management(settings)
+        sys.exit(0)
+
+    # Обработка введенных номеров профилей
     prof_open = prof_open.replace(" ", "")
     prof_list = prof_open.split(',')
     open_ids = []
