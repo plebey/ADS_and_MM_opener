@@ -97,8 +97,6 @@ def get_id_numbers(group_index, group_size, total_words):
 
 
 def selenium_task(window_id, open_url, http_link, passwrds):
-    # TODO: Вынести start_url в settings.json??
-    # TODO: Сделать вводимый сайт по умолчанию??
 
     resp = requests.get(open_url).json()
     if resp["code"] != 0:
@@ -132,9 +130,6 @@ def selenium_task(window_id, open_url, http_link, passwrds):
     window_handles = driver.window_handles
     driver.switch_to.window(window_handles[-1])
     driver.refresh()
-    # driver.close()
-    # window_handles = driver.window_handles
-    # driver.switch_to.window(window_handles[0])
     # Ввод пароля от MM
     time.sleep(2)
     input_element = driver.find_element(By.ID, "password")
@@ -143,7 +138,8 @@ def selenium_task(window_id, open_url, http_link, passwrds):
     else:
         input_element.send_keys(passwrds[window_id])
     input_element.send_keys(Keys.ENTER)
-
+    time.sleep(1.5)
+    driver.close()
     driver.quit()
     colorama.deinit()
 
@@ -152,7 +148,6 @@ def selenium_task(window_id, open_url, http_link, passwrds):
 
 def main():
     # TODO: Добавить возможность изменения настроек
-    # TODO: Изменить способ открытия по группам
     # TODO: Сделать опциональным закрытие всех прошлых вкладок
     colorama.init()
     # ads_id_from_cache()
@@ -191,9 +186,19 @@ def main():
 
     group_num = math.ceil(len(ids) / int(settings["pr_count"]))
     cprint("!!!Для перехода в настройки введите 0.", "yellow")
+    # TODO: Изменить способ открытия профилей с групп на перечисление
     gr_open = input("Номер открываемой группы? (Всего {}): ".format(group_num))
     gr_open = int(gr_open)-1
-    http_link = input("Стартовая ссылка: ")
+
+    if 'http_link' in settings:
+        http_link = settings["http_link"]
+    else:
+        http_link = input("Стартовая ссылка: ")
+        settings["http_link"] = http_link
+        with open('settings.json', 'w') as file:
+            json.dump(settings, file, indent=4)
+
+
     # Загрузка паролей
     with open("passwords.txt", "r") as file:
         passwrds = file.readlines()
