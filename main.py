@@ -16,6 +16,8 @@ from selenium.webdriver.common.by import By
 from termcolor import cprint
 import colorama
 import ads_ids_from_groups as ads_info
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 directory = 'C:\.ADSPOWER_GLOBAL\cache'
@@ -117,32 +119,26 @@ def selenium_task(window_id, open_url, http_link, passwrds):
     # print(service.command_line_args())
     driver = webdriver.Chrome(service=service, options=chrome_options)
 
-    window_handles = driver.window_handles
-    driver.switch_to.window(window_handles[0])
-
-    driver.get(http_link)
-    # time.sleep(5)
-    # driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.F5)
-    # driver.switch_to.window(driver.window_handles[-1])
-    # input_element = driver.find_element(By.CSS_SELECTOR, 'input[name="q"]')
-    # Ввод текста в строку поиска браузера
-    # input_element.send_keys('chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html')
-    # Нажатие клавиши Enter для выполнения поиска
-    # input_element.send_keys(Keys.ENTER)
-
-    driver.execute_script('window.open("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html");')
+    # TODO: Тут изменил с 0 на -1, надо затестить
     window_handles = driver.window_handles
     driver.switch_to.window(window_handles[-1])
+
+    driver.get(http_link)
+
+    driver.execute_script('window.open("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html");')
+    # window_handles = driver.window_handles
+    driver.switch_to.window(driver.window_handles[-1])
     driver.refresh()
     # Ввод пароля от MM
-    time.sleep(2)
-    input_element = driver.find_element(By.ID, "password")
+    wait = WebDriverWait(driver, 10)
+    input_element = wait.until(EC.presence_of_element_located((By.ID, "password")))
+    # input_element = driver.find_element(By.ID, "password")
     if len(passwrds) == 1:
         input_element.send_keys(passwrds[0])
     else:
         input_element.send_keys(passwrds[window_id])
     input_element.send_keys(Keys.ENTER)
-    time.sleep(1.5)
+    wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
     driver.close()
     driver.quit()
     colorama.deinit()
@@ -282,7 +278,7 @@ def main():
         ads_id = ids[window_id]
         open_url = "http://localhost:50325/api/v1/browser/start?user_id=" + ads_id + window_setting + f"&launch_args={str(args1)}"
         thread = Thread(target=selenium_task, args=(window_id, open_url, http_link, passwrds))
-        time.sleep(2)
+        time.sleep(1.1)
         thread.start()
         threads.append(thread)
 
