@@ -76,7 +76,7 @@ def groups_choose():
     sel_gr = gr_list[gr_id][0]
     return sel_gr
 
-
+# TODO: Изменить pr_count (убрать?)
 def set_def_settings():
     # Задание первичных настроек
     if not os.path.exists("settings.json"):
@@ -119,16 +119,20 @@ def selenium_task(window_id, open_url, http_link, passwrds):
     # print(service.command_line_args())
     driver = webdriver.Chrome(service=service, options=chrome_options)
 
-    # TODO: Тут изменил с 0 на -1, надо затестить
     window_handles = driver.window_handles
     driver.switch_to.window(window_handles[-1])
 
     driver.get(http_link)
+    # Решено: this page was blocked by chromium на 112 Chrome ядре (было 102)
+    #driver.execute_script('window.open("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html");')
 
-    driver.execute_script('window.open("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html");')
-    # window_handles = driver.window_handles
+    driver.execute_script("window.open('');")
     driver.switch_to.window(driver.window_handles[-1])
-    driver.refresh()
+    driver.get('chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html')
+
+    # window_handles = driver.window_handles
+    #driver.switch_to.window(driver.window_handles[-1])
+    #driver.refresh()
     # Ввод пароля от MM
     wait = WebDriverWait(driver, 10)
     input_element = wait.until(EC.presence_of_element_located((By.ID, "password")))
@@ -269,7 +273,8 @@ def main():
     del prof_nums
     # start_url1 = "https://lumpics.ru"
     # args1 = ["--disable-popup-blocking", "--disable-web-security", start_url1]
-    args1 = ["--disable-popup-blocking", "--disable-web-security"]
+    # args1 = ["--disable-popup-blocking", "--disable-web-security", "--disable-site-isolation-trials"]
+    args1 = ["--disable-popup-blocking"]
     args1 = str(args1).replace("'", '"')
     # for item in args1:
     #     print(type(item))
