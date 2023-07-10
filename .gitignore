@@ -1,7 +1,8 @@
 .idea
-ADS_ids.txt
-passwords.txt
-settings.json
+/ADS_ids.txt
+/passwords.txt
+/settings.json
+/errors.log
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

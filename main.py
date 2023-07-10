@@ -1,3 +1,5 @@
+import threading
+from datetime import datetime
 from pathlib import Path
 from threading import Thread
 
@@ -76,14 +78,14 @@ def groups_choose():
     sel_gr = gr_list[gr_id][0]
     return sel_gr
 
-# TODO: Изменить pr_count (убрать?)
+
 def set_def_settings():
     # Задание первичных настроек
     if not os.path.exists("settings.json"):
-        profiles_count = input("Сколько профилей открывать одновременно? (Пример ответа: 3)")
+        threads_count = input("Количество потоков: ")
         gr_id = groups_choose()
         data = {
-            "pr_count": profiles_count,
+            "threads": threads_count,
             "lavamoat_fixed": False,
             "group_id": gr_id,
             "close_windows": True
@@ -135,7 +137,16 @@ def selenium_task(window_id, open_url, http_link, passwrds):
     #driver.refresh()
     # Ввод пароля от MM
     wait = WebDriverWait(driver, 10)
-    input_element = wait.until(EC.presence_of_element_located((By.ID, "password")))
+
+    try:
+        input_element = wait.until(EC.presence_of_element_located((By.ID, "password")))
+    except:
+        cprint(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - ошибка (элемент 'password' не найден): {window_id + 1}", "red")
+        with open("errors.log", "a") as file:
+            file.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - ошибка (элемент 'password' не найден): {window_id + 1}\n")
+        driver.quit()
+        return
+
     # input_element = driver.find_element(By.ID, "password")
     if len(passwrds) == 1:
         input_element.send_keys(passwrds[0])
@@ -145,7 +156,8 @@ def selenium_task(window_id, open_url, http_link, passwrds):
     wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
     driver.close()
     driver.quit()
-    colorama.deinit()
+
+    cprint(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - открыт: {window_id+1}", "cyan")
 
 
 def settings_management(settings):
@@ -161,7 +173,7 @@ def settings_management(settings):
     if set_id == 0:
         main()
     elif set_id == 1:
-        chosed_seting = 'pr_count'
+        chosed_seting = 'threads'
     elif set_id == 2:
         chosed_seting = 'lavamoat_fixed'
     elif set_id == 3:
@@ -238,7 +250,7 @@ def main():
             open_ids.append(int(elem))
     open_ids = [x - 1 for x in open_ids]
 
-    # group_num = math.ceil(len(ids) / int(settings["pr_count"]))
+    # group_num = math.ceil(len(ids) / int(settings["threads"]))
     # gr_open = input("Номер открываемой группы? (Всего {}): ".format(group_num))
     # gr_open = int(gr_open)-1
 
@@ -256,13 +268,15 @@ def main():
         passwrds = [line.strip() for line in passwrds]
 
     # Получение номеров в заданной группе
-    # id_nums = get_id_numbers(gr_open, int(settings["pr_count"]), len(ids))
+    # id_nums = get_id_numbers(gr_open, int(settings["threads"]), len(ids))
 
     # Проверка на закрытие вкладок
     if settings["close_windows"]:
         window_setting = "&open_tabs=1"
     else:
         window_setting = ''
+
+    threads_count = settings["threads"]
 
     # Работа с профилями
     print("Открываются профили: ")
@@ -280,16 +294,26 @@ def main():
     #     print(type(item))
     threads = []
     for window_id in open_ids:
-        ads_id = ids[window_id]
-        open_url = "http://localhost:50325/api/v1/browser/start?user_id=" + ads_id + window_setting + f"&launch_args={str(args1)}"
-        thread = Thread(target=selenium_task, args=(window_id, open_url, http_link, passwrds))
-        time.sleep(1.1)
-        thread.start()
-        threads.append(thread)
+        while True:
+            # Получение списка всех активных потоков
+            thread_list = threading.enumerate()
+            # Получение количества активных потоков
+            num_threads = len(thread_list)
+            if num_threads < int(threads_count) + 1:
+                ads_id = ids[window_id]
+                open_url = "http://localhost:50325/api/v1/browser/start?user_id=" + ads_id + window_setting + f"&launch_args={str(args1)}"
+                thread = Thread(target=selenium_task, args=(window_id, open_url, http_link, passwrds))
+                time.sleep(1.1)
+                cprint(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - начато выполнение на профиле: {window_id+1}", "cyan")
+                thread.start()
+                threads.append(thread)
+                break
+            time.sleep(1)
 
     # Ожидаем завершения всех потоков
     for thread in threads:
         thread.join()
+    colorama.deinit()
 
 
 if __name__ == '__main__':
